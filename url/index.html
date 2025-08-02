@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
     <link rel="stylesheet" href="style.css">
+
 </head>
 <body>
     <div class="container">
@@ -26,15 +27,37 @@
     </div>
 
     <script>
-  document.getElementById('shorten-form').addEventListener('submit', function(e) {
+  document.getElementById('shorten-form').addEventListener('submit', async(e)=> {
     e.preventDefault(); 
 
     const formData = new FormData(e.target);
     const url = formData.get('url');
-    const customUrl = formData.get('shortCode');
-
-    console.log(url, customUrl); 
+    const shortCode = formData.get('shortCode');
+     
+    try{
+        const response =await fetch('/shorten',{
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ url, shortCode })
+        })
+        if(response.ok){
+           alert('URL shortened successfully!');
+            e.target.reset();
+        }
+        else{
+           const errorMessage = await response.text();
+           alert(errorMessage) 
+            e.target.reset();
+        }
+    }
+    catch(error){
+       console.error( error);
+    }
+  
   });
+  
 </script>
 </body>
 </html>
