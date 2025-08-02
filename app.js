@@ -1,25 +1,24 @@
-import { readFile } from 'fs/promises';
+import { appendFile, readFile, writeFile } from 'fs/promises';
 import { createServer } from 'http';
 import path from 'path';    
 import crypto from "crypto";
-import { write } from 'fs';
 
 const port = 3000;
-const FILEPATH = path.join('data','links.json')
+const FILEPATH = path.join("data","links.json")
 
 const serveFile = async (res,fileName,fileType)=>{
-
       try {
-            const data = await readFile();
+            const data = await readFile(fileName);
             res.writeHead(200, {'Content-Type':fileType});
             res.end(data);
         } catch (error) {
-            res.writeHead(500, {'Content-Type': 'text/plain'});
+            res.writeHead(404, {'Content-Type': 'text/plain'});
             res.end('404 file not found');
         }
 }
 const saveLinks = async (links)=>{
    await writeFile(FILEPATH, JSON.stringify(links))
+   return ;
 }
 const loadLinks = async () => {
     try{
@@ -28,33 +27,32 @@ const loadLinks = async () => {
     }
     catch(error){       
         if (error.code === "ENOENT") {
-        await writeFile(DATA_FILE, JSON.stringify({}));
+        await writeFile(FILEPATH,'')
         return {};
         }
     throw error;
     }
  }
-const server = createServer( (req,res)=>{
+const server = createServer( async(req,res)=>{
     if(req.method === 'GET' ){
          if(req.url === '/'){
-            serveFile(res,'index.html','text/html')
+           return serveFile(res,path.join('url', 'index.html'),'text/html')
          }
          else if(req.url === '/style.css'){
-            serveFile(res,'style.css','text/css')
+           return serveFile(res,path.join('url', 'style.css'),'text/css')
          }
     }
     if(req.method === 'POST' && req.url === '/shorten'){
-        const links = loadLinks();
-        let body = ''
-        req.on('data',chunk =>{
-            body += chunk
-        })
-        req.on('end',()=>{
+        const links = await loadLinks();
+        let body = ""
+        req.on('data',(chunk) =>(
+          body += chunk
+        ))
+        req.on('end',async()=>{
             const { url, shortCode } = JSON.parse(body);
              if(!url) {
-                res.writeHead(400, {'Content-Type': 'application/json'});
-                res.end(JSON.stringify({ error: 'URL is required' }));
-                return;
+                res.writeHead(400, {'Content-Type': 'text/plain'});
+               return res.end( 'URL is required' );
              }
               const finalShortCode = shortCode || crypto.randomBytes(4).toString("hex");
               if(links[finalShortCode]) {
@@ -62,7 +60,9 @@ const server = createServer( (req,res)=>{
                 return res.end("Short code already exists. Please choose another.");
               }
                links[finalShortCode] = url;
-               saveLinks(links);
+              await saveLinks(links);
+        res.writeHead(200, { "Content-Type": "application/JSON" });
+         res.end(JSON.stringify({ success: true, shortCode: finalShortCode  }));
         })
     }
 })
