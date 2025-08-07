@@ -1,9 +1,9 @@
-import { appendFile, readFile, writeFile } from 'fs/promises';
+import {  readFile, writeFile } from 'fs/promises';
 import { createServer } from 'http';
 import path from 'path';    
 import crypto from "crypto";
 
-const port = 3000;
+const PORT = process.env.PORT || 3000;
 const FILEPATH = path.join("data","links.json")
 
 const serveFile = async (res,fileName,fileType)=>{
@@ -27,7 +27,7 @@ const loadLinks = async () => {
     }
     catch(error){       
         if (error.code === "ENOENT") {
-        await writeFile(FILEPATH,'')
+        await writeFile(FILEPATH,'{}')
         return {};
         }
     throw error;
@@ -81,6 +81,6 @@ const server = createServer( async(req,res)=>{
         })
     }
 })
-server.listen(port, () => {
-    console.log(`Server is running on http://localhost:${port}`);
+server.listen(PORT, () => {
+    console.log(`Server is running on http://localhost:${PORT}`);
 });
